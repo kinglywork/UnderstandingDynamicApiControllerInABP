@@ -16,48 +16,47 @@ namespace TestCastleWindsorProxy
         {
             var container = new WindsorContainer();
             container.Register(
-                Component.For(typeof(IStudentAppService)).ImplementedBy(typeof(StudentAppService)).LifestyleTransient(),
-                Component.For(typeof(DynamicApiControllerInterceptor<IStudentAppService>)).LifestyleTransient(),
-                Component.For(typeof(DynamicApiController<IStudentAppService>))
-                    .Proxy.AdditionalInterfaces(typeof(IStudentAppService))
-                    .Interceptors(typeof(DynamicApiControllerInterceptor<IStudentAppService>))
-                    .LifestyleTransient()
+                Component
+                    .For(typeof(ITaskAppService))
+                    .ImplementedBy(typeof(TaskAppService))
+            );
+            container.Register(
+                Component
+                    .For(typeof(DynamicApiControllerInterceptor<ITaskAppService>))
+            );
+            container.Register(
+                Component.For(typeof(DynamicApiController))
+                    .Proxy.AdditionalInterfaces(typeof(ITaskAppService))
+                    .Interceptors(typeof(DynamicApiControllerInterceptor<ITaskAppService>))
             );
 
-            var dynamicApiControllerInstance = container.Resolve<DynamicApiController<IStudentAppService>>();
+            var dynamicApiControllerInstance = container.Resolve<DynamicApiController>();
 
-            var methodInfoInActionDescripter = dynamicApiControllerInstance.GetType().GetMethod("GetTask");
-            var student = methodInfoInActionDescripter?.Invoke(dynamicApiControllerInstance, new object[] {1});
+            dynamicApiControllerInstance.Execute();
+            (dynamicApiControllerInstance as ITaskAppService)?.UpdateTask(1);
+
+            Console.ReadKey();
         }
     }
 
-    public class Student
+    public interface ITaskAppService
     {
-        public int Id { get; set; }
+        void UpdateTask(int id);
+    }
 
-        public Student(int id)
+    public class TaskAppService : ITaskAppService
+    {
+        public void UpdateTask(int id)
         {
-            Id = id;
+            Console.WriteLine("TaskAppService.UpdateTask: {0}", id);
         }
     }
 
-    public interface IStudentAppService
-    {
-        Student GetTask(int id);
-    }
-
-    public class StudentAppService : IStudentAppService
-    {
-        public Student GetTask(int id)
-        {
-            return new Student(1);
-        }
-    }
-
-    public class DynamicApiController<T>
+    public class DynamicApiController
     {
         public void Execute()
         {
+            Console.WriteLine("DynamicApiController.Execute");
         }
     }
 
